@@ -52,11 +52,13 @@ void print_ip_addresses(struct ip *ip_header,const u_char *packet) {
     // Get the header length in bytes
     int header_length = ip_header->ip_hl * 4;
 
+    ++total_packets;
     // Print the protocol of the packet
     printf("Protocol: ");
     switch (ip_header->ip_p) {
         case IPPROTO_TCP:
             printf("TCP\n");
+            ++tcp_packets;
 
             // Get the TCP header
             struct tcphdr *tcp_header = (struct tcphdr *)(packet + sizeof(struct ethhdr) + header_length);
@@ -71,6 +73,7 @@ void print_ip_addresses(struct ip *ip_header,const u_char *packet) {
             break;
         case IPPROTO_UDP:
             printf("UDP\n");
+            ++udp_packets;
 
             // Get the UDP header
             struct udphdr *udp_header = (struct udphdr *)(packet + sizeof(struct ethhdr) + header_length);
@@ -85,6 +88,7 @@ void print_ip_addresses(struct ip *ip_header,const u_char *packet) {
             break;
         default:
             printf("Other\n");
+            ++skipped_packets;
             // Ignore other protocols
             break;
     }
@@ -108,29 +112,51 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char
 	/* retrieve the position of the IP header.Could also use struct iphdr */
     ip_header = (struct ip *)(packet + sizeof(struct ether_header));
 
-    /* retrieve the length of the IP header */
-    ip_len = ip_header->ip_hl * 4;
+    // Get the header length in bytes
+    int header_length = ip_header->ip_hl * 4;
   
   
-	//++total;
-	switch (ip_header->ip_p) //Check the Protocol and do accordingly...
-	{
-	
-		case 6:  //TCP Protocol
-			//++tcp;
-			process_tcp_packet(packet , ip_len);
-			break;
-		
-		case 17: //UDP Protocol
-			//++udp;
-			process_udp_packet(packet , ip_len);
-			break;
-		
-		default: //Other Protocols .
-			//++others;
-			break;
-	}
-	//printf("TCP : %d   UDP : %d    Others : %d   Total : %d\r", tcp , udp , others , total);
+	 ++total_packets;
+    // Print the protocol of the packet
+    printf("Protocol: ");
+    switch (ip_header->ip_p) {
+        case IPPROTO_TCP:
+            printf("TCP\n");
+            ++tcp_packets;
+
+            // Get the TCP header
+            struct tcphdr *tcp_header = (struct tcphdr *)(packet + sizeof(struct ethhdr) + header_length);
+
+            // Print the source and destination port numbers
+            printf("Source port: %d\n", ntohs(tcp_header->source));
+            printf("Destination port: %d\n", ntohs(tcp_header->dest));
+
+            // Print the header length and payload length in bytes
+            printf("Header length: %d\n", tcp_header->doff * 4);
+            printf("Payload length: %d\n", ntohs(ip_header->ip_len) - header_length - (tcp_header->doff * 4));
+            break;
+        case IPPROTO_UDP:
+            printf("UDP\n");
+            ++udp_packets;
+
+            // Get the UDP header
+            struct udphdr *udp_header = (struct udphdr *)(packet + sizeof(struct ethhdr) + header_length);
+
+            // Print the source and destination port numbers
+            printf("Source port: %d\n", ntohs(udp_header->source));
+            printf("Destination port: %d\n", ntohs(udp_header->dest));
+
+            // Print the header length and payload length in bytes
+            printf("Header length: %d\n", 8);
+            printf("Payload length: %d\n", ntohs(udp_header->len) - 8);
+            break;
+        default:
+            printf("Other\n");
+            ++skipped_packets;
+            // Ignore other protocols
+            break;
+    }
+	//printf("TCP : %d   UDP : %d    Others : %d   Total : %d\r", tcp_packets , udp_packets , skipped_packets , total_packets);
 }
 }
 
